@@ -1,0 +1,89 @@
+# Created by https://www.toptal.com/developers/gitignore
+#
+# Remember that all rules apply relative to the directory in which this file is found.
+# If you want to force an ignore for files that are already tracked, use "git rm --cached <file>"
+
+# Java
+*.class
+# Java
+# Ignore ALL .jar files generally
+*.jar
+
+# EXCEPT for .jar files within the 'libs/' folder
+!libs/*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+*.rar
+
+# Maven
+# If you eventually use Maven, uncomment the /target/ line:
+#/target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/wrapper/maven-wrapper.jar
+.apt_generated/
+
+# Gradle
+# If you eventually use Gradle, uncomment these lines:
+#.gradle/
+#build/
+#out/ # Often used by IntelliJ for build output
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Eclipse
+# .project
+# .classpath
+# .externalToolBuilders/
+# .settings/
+# .loadpath
+# .apt_generated/
+
+# NetBeans
+# nbproject/private/
+# build/
+# dist/
+# nbbuild/
+# *.jar
+# *.zip
+# *.log
+# .hgignore
+# .DS_Store
+#
+# jre/
+#
+# To ignore package-lock.json files
+# package-lock.json
+
+# Visual Studio Code
+.vscode/
+.vscode/*.log
+.vscode/.history/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Project specific files (common for Java projects, might be present)
+# Example: If you have a 'bin' folder for compiled classes outside 'out'
+#/bin/
+
+# Temporary files or IDE internal caches that could pop up
+*.bak
+*.tmp
+*.temp
