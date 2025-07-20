@@ -1,8 +1,6 @@
 package library.models;
 
-
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.Scanner;
 
 public class Book {
@@ -27,26 +25,43 @@ public class Book {
     public String getContentRating() { return contentRating; }
     public Boolean getAvailable() { return isAvailable; }
     public boolean isPresent() { return isPresent; }
+    public LocalDate getIssueDate() { return issueDate; }
+    public LocalDate getReturnDate() { return returnDate; }
+    public LocalDate getDueDate() { return dueDate; }
+
+    // setters
+    public void setBookID(String bookID) { this.bookID = bookID; }
+    public void setTitle(String title) { this.title = title; }
+    public void setAuthor(String author) { this.author = author; }
+    public void setGenre(String genre) { this.genre = genre; }
+    public void setContentRating(String contentRating) { this.contentRating = contentRating; }
+    public void setAvailable(Boolean available) { isAvailable = available; }
+    public void setIssueDate(LocalDate issueDate) { this.issueDate = issueDate; }
+    public void setReturnDate(LocalDate returnDate) { this.returnDate = returnDate; }
+    public void setDueDate(LocalDate dueDate) { this.dueDate = dueDate; }
+    public void setPresent(boolean present) { isPresent = present; }
+
     private Transaction currentTransaction;
 
     public void addBooks(String title, String author, String genre, String contentRating) {
 
-        this.bookID =  generateUniqueCode(genre) + "_" + ++bookCounter;
+        this.setBookID(generateUniqueCode(genre) + "_" + ++bookCounter);
 
-        this.title = title;
-        this.author = author;
-        this.genre = genre;
-        this.contentRating = contentRating;
-        this.isAvailable = true;
+        this.setTitle(title);
+        this.setAuthor(author);
+        this.setGenre(genre);
+        this.setContentRating(contentRating);
+        this.setAvailable(true);
 
         // here we will add these books in our future sql table
     }
 
     public void removeBook(String bookID) {
         // here we remove the book from sql table, but we keep the bookID for future purposes it will just show book not available now
-        this.isAvailable = false;
-        this.isPresent = false;
+        this.setAvailable(false);
+        this.setPresent(false);
     }
+
 
     public enum PeriodUnit { DAYS, WEEKS, MONTHS }
 
@@ -59,27 +74,27 @@ public class Book {
         if (member.pendingDues > 0) {
             throw new IllegalArgumentException("Clear pending dues before borrowing book.\n Your Pending Dues is: ₹ " + member.pendingDues);
         } else {
-            if (!book.isPresent) {
+            if (!book.isPresent()) {
                 throw new IllegalArgumentException("This book has been permanently removed from our collection and is no longer available for borrowing.");
-            } else if (book.isAvailable) {
+            } else if (book.getAvailable()) {
                 // here we check if the selected book is appropriate for members age
-                if (contentRating.equalsIgnoreCase("PG-13") && member.getAge() < 13) {
+                if (getContentRating().equalsIgnoreCase("PG-13") && member.getAge() < 13) {
                     throw new IllegalArgumentException("Age Restriction: This content is only available for viewers 13 years of age or older.");
-                } else if (contentRating.equalsIgnoreCase("R") && member.getAge() < 18) {
+                } else if (getContentRating().equalsIgnoreCase("R") && member.getAge() < 18) {
                     throw new IllegalArgumentException("Age Restriction: This content is only available for viewers 18 years of age or older.");
                 }
 
                 if (member.borrowedBooks.size() < member.getMaxBorrowLimit()) {
                     member.borrowedBooks.add(book);
-                    book.isAvailable = false; // the book now is borrowed
-                    book.issueDate = LocalDate.now();
-                    book.dueDate = getDueDate(sc);
+                    book.setAvailable(false); // the book now is borrowed
+                    book.setIssueDate(LocalDate.now());
+                    book.setDueDate(getDueDate(sc));
 
                     this.currentTransaction = new Transaction(
                             member.memberID,
-                            this.bookID,
-                            this.issueDate,
-                            this.dueDate
+                            this.getBookID(),
+                            this.getIssueDate(),
+                            this.getDueDate()
                     );
                 } else {
                     throw new IllegalArgumentException("Borrowed Limit Reached");
@@ -93,21 +108,21 @@ public class Book {
     public void returnBook(Book book, Member member) {
         // Check if the book is already returned or not
         if (currentTransaction.getReturnDate() != null) {
-            throw new IllegalStateException("Book " + book.bookID + " already returned on " + currentTransaction.getReturnDate());
+            throw new IllegalStateException("Book " + book.getBookID() + " already returned on " + currentTransaction.getReturnDate());
         }
 
         // this removes book from users borrowedBooks arraylist then marks its available and then puts today's date as return date
         member.borrowedBooks.remove(book);
-        book.returnDate = LocalDate.now();
+        book.setReturnDate(LocalDate.now());
         this.currentTransaction.setReturnDate();
 
         // Calculates fine if returnDate is past dueDate
-        currentTransaction.calculateFine(returnDate, dueDate);
+        currentTransaction.calculateFine(getReturnDate(), getDueDate());
 
         // Sets Dues in Member Class
         member.setPendingDues(currentTransaction.getFine());
 
-        book.isAvailable = true;
+        book.setAvailable(true);
     }
 
     private LocalDate getDueDate(Scanner sc) {
@@ -146,8 +161,8 @@ public class Book {
         if (totalDays <= 0 || totalDays > 90) {
             throw new IllegalArgumentException("Invalid Duration! Duration must be between 1 and 90 days.");
         }
-        dueDate = issueDate.plusDays(totalDays);
-        return dueDate;
+        setDueDate(getIssueDate().plusDays(totalDays));
+        return getDueDate();
     }
 
     // this stores our codes
