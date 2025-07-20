@@ -24,8 +24,7 @@ public class Transaction {
     public LocalDate getIssueDate() { return issueDate; }
     public LocalDate getDueDate() { return dueDate; }
 
-    Transaction(String memberID, String  borrowedBookID, LocalDate issueDate, LocalDate dueDate) {
-
+    public Transaction(String memberID, String  borrowedBookID, LocalDate issueDate, LocalDate dueDate) {
         this.memberID = memberID;
         this.borrowedBookID = borrowedBookID;
         this.issueDate = issueDate;

@@ -3,14 +3,15 @@ package library.models;
 import org.mindrot.jbcrypt.BCrypt;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Scanner;
+import java.util.List;
+import java.util.Collections;
 
 public class Member {
     private static int studentCounter = 0;
     private static int teacherCounter = 0;
 
     // starts with STU(for students) and TCH(for teachers)
-    public final String memberID;
+    private final String memberID;
     private String occupation;// final because this id cant be changed later on
     private String name;
     private int age;// for age related books (this feature will be added later)
@@ -20,11 +21,31 @@ public class Member {
     private String hashedPassword;
     private final LocalDate joinDate;
     private int maxBorrowLimit; // for Students its 3 and for Teachers its 5
-    long pendingDues = 0;
+    private long pendingDues = 0;
 
     // this list stores currently borrowed books of members
-    ArrayList<Book> borrowedBooks = new ArrayList<>();
+    private final ArrayList<Book> borrowedBooks = new ArrayList<>();
+    public List<Book> getBorrowedBooks() {
+        // this now prevents unnecessary modifications in our ArrayList
+        return Collections.unmodifiableList(this.borrowedBooks);
+    }
 
+    // New Methods to manage Borrowed Books
+    public void addBookToBorrowedList(Book book) {
+        if (book == null) {
+            throw new IllegalArgumentException("Cannot add a null book to the borrowed list.");
+        }
+        this.borrowedBooks.add(book);
+    }
+
+    public void removeBookFromBorrowedList(Book book) {
+        if (book == null) {
+            throw new IllegalArgumentException("Cannot remove a null book from the borrowed list.");
+        }
+        this.borrowedBooks.remove(book);
+    }
+
+    // getters
     public String getOccupation() { return occupation; }
     public String getName() { return name; }
     public int getAge() { return age; }
@@ -34,34 +55,47 @@ public class Member {
     public String getHashedPassword() { return hashedPassword; }
     public LocalDate getJoinDate() { return joinDate; }
     public int getMaxBorrowLimit() { return maxBorrowLimit; }
+    public long getPendingDues() { return pendingDues; }
+    public String getMemberID() { return memberID; }
+
+    // setters
+    public void setOccupation(String occupation) { this.occupation = occupation; }
+    public void setName(String name) { this.name = name; }
+    public void setAge(int age) { this.age = age; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    public void setEmail(String email) { this.email = email; }
+    public void setPassword(String password) { this.password = password; }
+    public void setHashedPassword(String hashedPassword) { this.hashedPassword = hashedPassword; }
+    public void setMaxBorrowLimit(int maxBorrowLimit) { this.maxBorrowLimit = maxBorrowLimit; }
+    public void setPendingDues(long fine) { this.pendingDues = fine; }
 
     public Member(String name, int age, String occupation, String email, String password, String phoneNumber) {
         // this generates users ID for a lifetime.
         this.memberID = generateID(occupation);
-        this.name = name;
-        this.age = age;
+        this.setName(name);
+        this.setAge(age);
         // throws exception if invalid email is provided
-        this.email = verifyEmail(email);
+        this.setEmail(verifyEmail(email));
         // throws exception if an invalid password is provided
-        this.password = verifyPassword(password);
+        this.setPassword(verifyPassword(password));
 
         // hashing the password for security this will be stored in SQL Table
-        this.hashedPassword = BCrypt.hashpw(this.password, BCrypt.gensalt());
-        this.password = null; // doesn't store password
+        this.setHashedPassword(BCrypt.hashpw(this.getPassword(), BCrypt.gensalt()));
+        this.setPassword(null); // doesn't store password
 
         joinDate = LocalDate.now();
 
         // we define the number of books that can be borrowed by each types of member later we can also add premium
         if (memberID.contains("STU")) {
-            maxBorrowLimit = 3;
+            setMaxBorrowLimit(3);
         } else if (memberID.contains("TCH")) {
-            maxBorrowLimit = 5;
+            setMaxBorrowLimit(5);
         }
     }
 
     // to change ones name
     protected void changeName(String name) {
-        this.name = name;
+        this.setName(name);
     }
 
 //    private void changePassword(String memberID) {
@@ -95,19 +129,16 @@ public class Member {
         };
     }
 
-    void setPendingDues(long fine) {
-        this.pendingDues = fine;
-    }
-
     public void payFine(String memberID, long amount) {
-        if (amount > pendingDues) {
+        if (amount > getPendingDues()) {
             throw new IllegalArgumentException("Amount is greater than dues");
         }
-        this.pendingDues -= amount;
+        this.setPendingDues(this.getPendingDues() - amount);
 
-        if (this.pendingDues == 0) {
+        if (this.getPendingDues() == 0) {
             System.out.println("Your dues have been cleared!!");
         }
-        System.out.println("Your Current pending dues is: ₹ " + this.pendingDues);
+        System.out.println("Your Current pending dues is: ₹ " + this.getPendingDues());
     }
+
 }
