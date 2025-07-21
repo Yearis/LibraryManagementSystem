@@ -15,7 +15,7 @@ public class LibraryService {
     private LocalDate getDueDate(LocalDate issueDate, Scanner sc) {
         Objects.requireNonNull(issueDate, "Issue Date cannot be Null");
 
-        System.out.println("Choose borrow period unit:");
+        System.out.println("Choose borrow period unit: ");
         System.out.println("1. DAYS");
         System.out.println("2. WEEKS");
         System.out.println("3. MONTHS");
@@ -118,6 +118,7 @@ public class LibraryService {
 
         LocalDate returnDate = LocalDate.now();
 
+        // set return date before calculating fine
         currentTransaction.setReturnDate(returnDate);
 
         // Calculates fine if returnDate is past dueDate
@@ -139,6 +140,63 @@ public class LibraryService {
         } else {
             System.out.println("No fine incurred.");
         }
+    }
+
+    public void extendDueDate(Book book, Member member, Scanner sc) {
+        Objects.requireNonNull(book, "Book cannot be null.");
+        Objects.requireNonNull(member, "Member cannot be null.");
+
+        // we took the current transaction of the book which hold its current transaction
+        Transaction currentTransaction = book.getCurrentTransaction();
+
+        // to check if it's even borrowed at all
+        if (currentTransaction == null) {
+            throw new IllegalStateException("The book " + book.getBookID() + " is currently not borrowed");
+        } else if (!currentTransaction.getMemberID().equals(member.getMemberID())) {
+            // now from books current transaction we can get the id of the member currently borrowing it
+            throw new IllegalStateException("The book " + book.getBookID() + " is currently not borrowed by you");
+        } else {
+            // if the book is actually borrowed and by the correct member
+            // now we can continue with our renewal process
+
+
+            // before asking for renewal time, lets first check for any late submissions
+            LocalDate currentDate = LocalDate.now();
+
+            if (currentDate.isAfter(currentTransaction.getDueDate())) {
+                currentTransaction.calculateFine();
+            }
+
+            // here we ask for what kind of period the user wants to renew
+            System.out.println("Choose borrow period unit: ");
+            System.out.println("1. DAYS");
+            System.out.println("2. WEEKS");
+            System.out.println("Enter Choice 1 or 2: ");
+
+            int choice = sc.nextInt();
+
+            PeriodUnit unit = switch (choice) {
+                case 1 -> PeriodUnit.DAYS;
+                case 2 -> PeriodUnit.WEEKS;
+                default -> throw new IllegalArgumentException("Invalid Choice!");
+            };
+
+            System.out.println("Enter the duration (max limit for renewal is 14 days or 2 weeks): ");
+            int duration = sc.nextInt();
+
+            int totalDays = 0;
+            if (unit == PeriodUnit.DAYS) {
+                totalDays = duration;
+            } else if (unit == PeriodUnit.WEEKS) {
+                totalDays = duration * 7;
+            }
+
+            if (totalDays <= 0 || totalDays > 14) {
+                throw new IllegalArgumentException("Renewal duration is between 1 - 14 days.");
+            }
+        }
+
+
     }
 
 //    public void searchBook(Book book) {
