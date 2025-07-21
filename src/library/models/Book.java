@@ -1,19 +1,14 @@
 package library.models;
 
-import java.time.LocalDate;
-
 public class Book {
     private static int bookCounter = 1000;
 
-    private String bookID;
+    private final String bookID;
     private String title;
     private String author;
     private String genre;
     private String contentRating; // {G, PG-13, R}
     private Boolean isAvailable;
-    private LocalDate issueDate;
-    private LocalDate returnDate;
-    private LocalDate dueDate;
     private boolean isPresent = true;
 
     // getters
@@ -24,30 +19,23 @@ public class Book {
     public String getContentRating() { return contentRating; }
     public Boolean getAvailable() { return isAvailable; }
     public boolean isPresent() { return isPresent; }
-    public LocalDate getIssueDate() { return issueDate; }
-    public LocalDate getReturnDate() { return returnDate; }
-    public LocalDate getDueDate() { return dueDate; }
 
     // setters
-    public void setBookID(String bookID) { this.bookID = bookID; }
-    public void setTitle(String title) { this.title = title; }
-    public void setAuthor(String author) { this.author = author; }
-    public void setGenre(String genre) { this.genre = genre; }
-    public void setContentRating(String contentRating) { this.contentRating = contentRating; }
-    public void setAvailable(Boolean available) { isAvailable = available; }
-    public void setIssueDate(LocalDate issueDate) { this.issueDate = issueDate; }
-    public void setReturnDate(LocalDate returnDate) { this.returnDate = returnDate; }
-    public void setDueDate(LocalDate dueDate) { this.dueDate = dueDate; }
-    public void setPresent(boolean present) { isPresent = present; }
+    void setTitle(String title) { this.title = title; }
+    void setAuthor(String author) { this.author = author; }
+    void setGenre(String genre) { this.genre = genre; }
+    void setContentRating(String contentRating) { this.contentRating = contentRating; }
+    void setAvailable(Boolean available) { isAvailable = available; }
+    void setPresent(boolean present) { isPresent = present; }
 
     private Transaction currentTransaction;
     public Transaction getCurrentTransaction() { return currentTransaction; }
-    public void setCurrentTransaction(Transaction currentTransaction) { this.currentTransaction = currentTransaction; }
+    void setCurrentTransaction(Transaction currentTransaction) { this.currentTransaction = currentTransaction; }
 
 
-    public void addBooks(String title, String author, String genre, String contentRating) {
+    public Book (String title, String author, String genre, String contentRating) {
 
-        this.setBookID(generateUniqueCode(genre) + "_" + ++bookCounter);
+        this.bookID = generateUniqueCode(genre) + "_" + ++bookCounter;
 
         this.setTitle(title);
         this.setAuthor(author);
@@ -58,36 +46,54 @@ public class Book {
         // here we will add these books in our future sql table
     }
 
-    public void removeBook(String bookID) {
+    public void removeBook() {
+
+        if (!this.isPresent) {
+            throw new IllegalStateException("Book " + this.bookID + " is already removed");
+        }
         // here we remove the book from sql table, but we keep the bookID for future purposes it will just show book not available now
         this.setAvailable(false);
         this.setPresent(false);
+        currentTransaction = null;
     }
-    // this stores our codes
-//    HashMap<String, Integer> codeCounts = new HashMap<>();
+
+    public void markAsBorrowed(Transaction transaction) {
+        if (!this.isAvailable || !this.isPresent) {
+            // Provides a specific message based on availability/presence
+            String reason = !this.isAvailable ? "not available for borrowing" : "has been removed";
+            throw new IllegalStateException("Book " + this.bookID + " cannot be borrowed because it is " + reason + ".");
+        }
+
+        setAvailable(false);
+        setCurrentTransaction(transaction);
+    }
+
+    public void markAsReturned() {
+        if (this.isAvailable) { // If it's available, it wasn't out on loan
+            throw new IllegalStateException("Book " + this.bookID + " is already marked as available.");
+        }
+        if (this.currentTransaction == null) { // Must have a current transaction to be returned
+            throw new IllegalStateException("Book " + this.bookID + " was not currently borrowed (no active transaction).");
+        }
+
+        setAvailable(true);
+        setCurrentTransaction(null); // Transaction completed
+    }
 
     private String generateUniqueCode(String genre) {
 
+        // splits the input "genre" into words using spaces
         String[] words = genre.trim().split("\\s+");
-
         StringBuilder uniqueCode = new StringBuilder();
-        if (genre.length() >= 3) {
-            uniqueCode.append(words[0].substring(0, 3).toUpperCase());
-        } else { // for genres whose length is less than 3 (e.g. AI)
-            uniqueCode.append(words[0].substring(0, genre.length() + 1).toUpperCase());
-        }
 
+        // Takes the first 3 characters of the first word, or the whole word if it is shorter than 3
+        uniqueCode.append(words[0].substring(0, Math.min(words[0].length(), 3)).toUpperCase());
 
-        // if genre has more than one word (e.g. Science Fiction)
+        // For subsequent words, we take the first 2 chars, or the whole word if shorter
         for (int i = 1; i < words.length; i++) {
-            // here "Science Fiction" becomes SCIFI
-            uniqueCode.append(words[i], 0, 2);
+            uniqueCode.append(words[i].substring(0, Math.min(words[i].length(), 2)).toUpperCase());
         }
 
-        // check if a uniqueCode is present in the map or not and sets the counter for that
-//        int count = codeCounts.getOrDefault(uniqueCode.toString(), 0);
-//
-//        codeCounts.put(uniqueCode.toString(), count + 1);
         return uniqueCode.toString();
     }
 

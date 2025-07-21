@@ -1,7 +1,5 @@
 package library.models;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
@@ -12,17 +10,21 @@ public class Transaction {
 
     private final String transactionID;
     private final String memberID;
-    private String borrowedBookID;
-    private LocalDate issueDate;
+    private final String borrowedBookID;
+    private final LocalDate issueDate;
     private LocalDate returnDate = null;
     private LocalDate dueDate;
-    long fine;
+    private long fine;
 
+    // getters
     public String getTransactionID() { return transactionID; }
     public String getMemberID() { return memberID; }
     public String getBorrowedBookID() { return borrowedBookID; }
     public LocalDate getIssueDate() { return issueDate; }
     public LocalDate getDueDate() { return dueDate; }
+    public LocalDate getReturnDate() { return this.returnDate; }
+    public long getFine() { return this.fine; }
+
 
     public Transaction(String memberID, String  borrowedBookID, LocalDate issueDate, LocalDate dueDate) {
         this.memberID = memberID;
@@ -33,17 +35,19 @@ public class Transaction {
         this.transactionID = "TR_" + String.format("%06d", ++transactionCounter);
     }
 
-    public void setReturnDate() {
-        this.returnDate = LocalDate.now();
+    public void setReturnDate(LocalDate returnDate) {
+        Objects.requireNonNull(returnDate, "Return date cannot be null");
+        this.returnDate = returnDate;
     }
 
-    public LocalDate getReturnDate() {
-        return this.returnDate;
-    }
 
-    public void calculateFine(@NotNull LocalDate returnDate, @NotNull LocalDate dueDate) {
+    public void calculateFine() {
         Objects.requireNonNull(returnDate, "Return date cannot be null");
         Objects.requireNonNull(dueDate, "Due date cannot be null");
+
+        if (this.returnDate == null) {
+            throw new IllegalStateException("Return date must be set before calculating fine.");
+        }
 
         // Calculates fine if returnDate is past dueDate
         if (returnDate.isBefore(issueDate)) {
@@ -54,10 +58,8 @@ public class Transaction {
             long daysLate = ChronoUnit.DAYS.between(dueDate, returnDate);
             this.fine = Math.max(0, daysLate) * 5; // every late day result in 5rs fine
         } else {
-            this.fine = 0;
+            this.fine = 0; // No fine if returned before or on due date
         }
     }
-    public long getFine() {
-        return this.fine;
-    }
+
 }

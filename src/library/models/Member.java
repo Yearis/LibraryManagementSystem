@@ -11,8 +11,8 @@ public class Member {
     private static int teacherCounter = 0;
 
     // starts with STU(for students) and TCH(for teachers)
-    private final String memberID;
-    private String occupation;// final because this id cant be changed later on
+    private final String memberID;// final because this id cant be changed later on
+    private String occupation;
     private String name;
     private int age;// for age related books (this feature will be added later)
     private String phoneNumber;
@@ -26,11 +26,12 @@ public class Member {
     // this list stores currently borrowed books of members
     private final ArrayList<Book> borrowedBooks = new ArrayList<>();
     public List<Book> getBorrowedBooks() {
-        // this now prevents unnecessary modifications in our ArrayList
+        // this now prevents unnecessary modifications in our ArrayList and only shows a read only view of borrowed books which is not editable
         return Collections.unmodifiableList(this.borrowedBooks);
     }
 
-    // New Methods to manage Borrowed Books
+    // New Methods to manage Books for Customer
+    // adds books to the list
     public void addBookToBorrowedList(Book book) {
         if (book == null) {
             throw new IllegalArgumentException("Cannot add a null book to the borrowed list.");
@@ -38,6 +39,7 @@ public class Member {
         this.borrowedBooks.add(book);
     }
 
+    // removes books from list
     public void removeBookFromBorrowedList(Book book) {
         if (book == null) {
             throw new IllegalArgumentException("Cannot remove a null book from the borrowed list.");
@@ -95,6 +97,7 @@ public class Member {
 
     // to change ones name
     protected void changeName(String name) {
+        // will add a password verifier so that only after verifying your password you can change your username
         this.setName(name);
     }
 
@@ -106,23 +109,31 @@ public class Member {
 
     // to check if email provided is correct or not, I will also add more functionalities later like verify email by clicking the link etc
     private String verifyEmail(String email) {
+        if (email == null) {
+            throw new IllegalArgumentException("Please enter an email address");
+        }
         // if keeping email field blank or using fake emails or junk emails
-        if (email == null || (!email.matches("^[A-Za-z0-9+_.-]+@(gmail\\.com|yahoo\\.com|outlook\\.com|icloud\\.com|protonmail\\.com|zoho\\.com)$"))) {
+        if ((!email.matches("^[A-Za-z0-9+_.-]+@(gmail\\.com|yahoo\\.com|outlook\\.com|icloud\\.com|protonmail\\.com|zoho\\.com)$"))) {
+            // currently only added popular email domains to prevent usage of temp or junk email addresses
             throw new IllegalArgumentException("Invalid email! Use domains: @gmail.com, @yahoo.com, etc.");
         } return email;
     }
 
     // to check if a strong password is created or not
     private String verifyPassword(String password) {
-        if (password == null || !password.matches("^(?=.*[A-Z])(?=.*[!@#$%^&*])(?=.*[a-z]).{6,}$")) {
+        if (password == null) {
+            throw new IllegalArgumentException("Password field cannot be empty!!\n Please create a robust password");
+        }
+        if (!password.matches("^(?=.*[A-Z])(?=.*[!@#$%^&*])(?=.*[a-z]).{6,}$")) {
             throw new IllegalArgumentException("Password must have: 1 uppercase, 1 lowercase, 1 special char and more than 6 characters.");
         }
         return password;
     }
 
-    // to generate memberID
+    // to generate memberID based on user's occupation
     private String generateID(String occupation) {
         return switch (occupation.toLowerCase()) {
+            // starts counting in 3 digits e.g. 001 (will change the limit if required)
             case "student" -> "STU_" + String.format("%03d", ++studentCounter);
             case "teacher" -> "TCH_" + String.format("%03d", ++teacherCounter);
             default -> throw new IllegalArgumentException("Invalid occupation!");

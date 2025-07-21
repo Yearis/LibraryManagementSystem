@@ -5,7 +5,6 @@ import library.models.Member;
 import library.models.Transaction;
 
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.Scanner;
 import java.util.Objects;
 
@@ -64,41 +63,40 @@ public class LibraryService {
         } else {
             if (!book.isPresent()) {
                 throw new IllegalArgumentException("This book has been permanently removed from our collection and is no longer available for borrowing.");
-            } else if (book.getAvailable()) {
-                // here we check if the selected book is appropriate for members age
-                if (book.getContentRating().equalsIgnoreCase("PG-13") && member.getAge() < 13) {
-                    throw new IllegalArgumentException("Age Restriction: This content is only available for viewers 13 years of age or older.");
-                } else if (book.getContentRating().equalsIgnoreCase("R") && member.getAge() < 18) {
-                    throw new IllegalArgumentException("Age Restriction: This content is only available for viewers 18 years of age or older.");
-                }
+            } else if (!book.getAvailable()) {
+                System.out.println("Sorry, the book " + book.getTitle() + " is is currently not available for borrowing.");
+                return; // we exit the method if it's not available
+            }
 
-                if (member.getBorrowedBooks().size() < member.getMaxBorrowLimit()) {
+            // here we check if the selected book is appropriate for members age
+            if (book.getContentRating().equalsIgnoreCase("PG-13") && member.getAge() < 13) {
+                throw new IllegalArgumentException("Age Restriction: This content is only available for viewers 13 years of age or older.");
+            } else if (book.getContentRating().equalsIgnoreCase("R") && member.getAge() < 18) {
+                throw new IllegalArgumentException("Age Restriction: This content is only available for viewers 18 years of age or older.");
+            }
 
-                    LocalDate issueDate = LocalDate.now();
-                    book.setIssueDate(issueDate);
+            if (member.getBorrowedBooks().size() < member.getMaxBorrowLimit()) {
 
-                    member.addBookToBorrowedList(book);
-                    book.setAvailable(false); // the book now is borrowed
+                LocalDate issueDate = LocalDate.now();
+                LocalDate calculateDueDate = this.getDueDate(issueDate, sc);
 
-                    LocalDate calculateDueDate = this.getDueDate(issueDate, sc);
-                    book.setDueDate(calculateDueDate);
+                Transaction newTransaction = new Transaction(
+                        member.getMemberID(),
+                        book.getBookID(),
+                        issueDate,
+                        calculateDueDate
+                );
 
-                    book.setCurrentTransaction(new Transaction(
-                            member.getMemberID(),
-                            book.getBookID(),
-                            book.getIssueDate(),    // Use the issueDate just set on the book
-                            book.getDueDate()       // Use the dueDate just set on the book
-                    ));
+                book.markAsBorrowed(newTransaction);
 
-                    System.out.println("Book '" + book.getTitle() + "' borrowed successfully by " + member.getName() + ".");
-                    System.out.println("Issue Date: " + book.getIssueDate());
-                    System.out.println("Due Date: " + book.getDueDate());
+                member.addBookToBorrowedList(book); // the book now is borrowed
 
-                } else {
-                    throw new IllegalArgumentException("Borrowed Limit Reached");
-                }
+                System.out.println("Book '" + book.getTitle() + "' borrowed successfully by " + member.getName() + ".");
+                System.out.println("Issue Date: " + newTransaction.getIssueDate());
+                System.out.println("Due Date: " + newTransaction.getDueDate());
+
             } else {
-                System.out.println("Sorry the book currently is not available!");
+                throw new IllegalArgumentException("Borrowed Limit Reached");
             }
         }
     }
@@ -109,28 +107,32 @@ public class LibraryService {
 
         Transaction currentTransaction = book.getCurrentTransaction();
 
+        if (currentTransaction == null) {
+            throw  new IllegalStateException("Book " + book.getBookID() + " is not currently borrowed.");
+        }
+
         // Check if the book is already returned or not
         if (currentTransaction.getReturnDate() != null) {
             throw new IllegalStateException("Book " + book.getBookID() + " already returned on " + currentTransaction.getReturnDate());
         }
 
+        LocalDate returnDate = LocalDate.now();
+
+        currentTransaction.setReturnDate(returnDate);
+
+        // Calculates fine if returnDate is past dueDate
+        currentTransaction.calculateFine();
+
         // this removes book from users borrowedBooks arraylist then marks its available and then puts today's date as return date
         member.removeBookFromBorrowedList(book);
 
-        LocalDate returnDate = LocalDate.now();
-        book.setReturnDate(returnDate);
-        currentTransaction.setReturnDate();
-
-        // Calculates fine if returnDate is past dueDate
-        currentTransaction.calculateFine(returnDate, currentTransaction.getDueDate());
+        book.markAsReturned();
 
         // Sets Dues in Member Class
-        member.setPendingDues(currentTransaction.getFine());
-
-        book.setAvailable(true);
+        member.setPendingDues(member.getPendingDues() + currentTransaction.getFine());
 
         System.out.println("Book '" + book.getTitle() + "' returned successfully by " + member.getName() + ".");
-        System.out.println("Return Date: " + book.getReturnDate());
+        System.out.println("Return Date: " + currentTransaction.getReturnDate());
         if (currentTransaction.getFine() > 0) {
             System.out.println("Fine incurred: ₹ " + currentTransaction.getFine());
             System.out.println("Member's total pending dues: ₹ " + member.getPendingDues());
@@ -139,9 +141,9 @@ public class LibraryService {
         }
     }
 
-    public void searchBook(Book book) {
-        // we here check if a book is available or not
-        // this will require an SQL Table
-    }
+//    public void searchBook(Book book) {
+//        // we here check if a book is available or not
+//        // this will require an SQL Table
+//    }
 
 }
