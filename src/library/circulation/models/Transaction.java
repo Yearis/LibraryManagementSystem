@@ -1,4 +1,4 @@
-package library.models;
+package library.circulation.models;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;

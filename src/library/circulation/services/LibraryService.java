@@ -1,8 +1,8 @@
-package library.services;
+package library.circulation.services;
 
-import library.models.Book;
-import library.models.Member;
-import library.models.Transaction;
+import library.circulation.models.Book;
+import library.circulation.models.Member;
+import library.circulation.models.Transaction;
 
 import java.time.LocalDate;
 import java.util.Scanner;

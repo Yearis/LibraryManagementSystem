@@ -1,4 +1,4 @@
-package library.models;
+package library.circulation.models;
 
 import org.mindrot.jbcrypt.BCrypt;
 import java.time.LocalDate;
@@ -17,8 +17,7 @@ public class Member {
     private int age;// for age related books (this feature will be added later)
     private String phoneNumber;
     private String email;
-    private String password;
-    private String hashedPassword;
+    private String hashedPassword; // only hashed version is stored
     private final LocalDate joinDate;
     private int maxBorrowLimit; // for Students its 3 and for Teachers its 5
     private long pendingDues = 0;
@@ -54,7 +53,6 @@ public class Member {
     public int getAge() { return age; }
     public String getPhoneNumber() { return phoneNumber; }
     public String getEmail() { return email; }
-    public String getPassword() { return password; }
     public String getHashedPassword() { return hashedPassword; }
     public LocalDate getJoinDate() { return joinDate; }
     public int getMaxBorrowLimit() { return maxBorrowLimit; }
@@ -67,9 +65,7 @@ public class Member {
     public void setAge(int age) { this.age = age; }
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
     public void setEmail(String email) { this.email = email; }
-    public void setPassword(String password) { this.password = password; }
-    public void setHashedPassword(String hashedPassword) { this.hashedPassword = hashedPassword; }
-    public void setMaxBorrowLimit(int maxBorrowLimit) { this.maxBorrowLimit = maxBorrowLimit; }
+    void setMaxBorrowLimit(int maxBorrowLimit) { this.maxBorrowLimit = maxBorrowLimit; }
     public void setPendingDues(long fine) { this.pendingDues = fine; }
 
     public Member(String name, int age, String occupation, String email, String password, String phoneNumber) {
@@ -79,12 +75,12 @@ public class Member {
         this.setAge(age);
         // throws exception if invalid email is provided
         this.setEmail(verifyEmail(email));
-        // throws exception if an invalid password is provided
-        this.setPassword(verifyPassword(password));
+
+        // first, we verify the password passes through the constructor
+        String verifiedPassword = verifyPassword(password);
 
         // hashing the password for security this will be stored in SQL Table
-        this.setHashedPassword(BCrypt.hashpw(this.getPassword(), BCrypt.gensalt()));
-        this.setPassword(null); // doesn't store password
+        this.hashedPassword = BCrypt.hashpw(verifiedPassword, BCrypt.gensalt());
 
         joinDate = LocalDate.now();
 
@@ -102,11 +98,19 @@ public class Member {
         this.setName(name);
     }
 
-//    private void changePassword(String memberID) {
-//        Scanner sc = new Scanner(System.in);
-//        System.out.println("Enter your previous Password: ");
-//        String password =
-//    }
+     public boolean changePassword(String oldPassword, String newPassword) {
+         // a person must know there password to change password
+         // if a hacker already knows ur password then why would he change the password when he can use it as it is
+         if (BCrypt.checkpw(oldPassword, this.hashedPassword)) {
+             String verifiedNewPassword = verifyPassword(newPassword);
+             this.hashedPassword = BCrypt.hashpw(verifiedNewPassword, BCrypt.gensalt());
+             System.out.println("Password changed successfully.");
+             return true;
+         } else {
+             System.out.println("Incorrect old password.");
+             return false;
+         }
+     }
 
     // to check if email provided is correct or not, I will also add more functionalities later like verify email by clicking the link etc
     private String verifyEmail(String email) {
@@ -141,7 +145,7 @@ public class Member {
         };
     }
 
-    public void payFine(String memberID, long amount) {
+    public void payFine(long amount) {
         if (amount > getPendingDues()) {
             throw new IllegalArgumentException("Amount is greater than dues");
         }
@@ -149,8 +153,9 @@ public class Member {
 
         if (this.getPendingDues() == 0) {
             System.out.println("Your dues have been cleared!!");
+        } else {
+            System.out.println("Your Current pending dues is: ₹ " + this.getPendingDues());
         }
-        System.out.println("Your Current pending dues is: ₹ " + this.getPendingDues());
     }
 
 }

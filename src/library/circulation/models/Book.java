@@ -1,4 +1,4 @@
-package library.models;
+package library.circulation.models;
 
 public class Book {
     private static int bookCounter = 1000;
