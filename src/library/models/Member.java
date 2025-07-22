@@ -25,6 +25,7 @@ public class Member {
 
     // this list stores currently borrowed books of members
     private final ArrayList<Book> borrowedBooks = new ArrayList<>();
+
     public List<Book> getBorrowedBooks() {
         // this now prevents unnecessary modifications in our ArrayList and only shows a read only view of borrowed books which is not editable
         return Collections.unmodifiableList(this.borrowedBooks);

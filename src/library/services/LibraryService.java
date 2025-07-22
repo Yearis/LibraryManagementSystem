@@ -124,13 +124,15 @@ public class LibraryService {
         // Calculates fine if returnDate is past dueDate
         currentTransaction.calculateFine();
 
+        // Sets Dues in Member Class
+        member.setPendingDues(member.getPendingDues() + currentTransaction.getFine());
+
+        currentTransaction.resetFine();
+
         // this removes book from users borrowedBooks arraylist then marks its available and then puts today's date as return date
         member.removeBookFromBorrowedList(book);
 
         book.markAsReturned();
-
-        // Sets Dues in Member Class
-        member.setPendingDues(member.getPendingDues() + currentTransaction.getFine());
 
         System.out.println("Book '" + book.getTitle() + "' returned successfully by " + member.getName() + ".");
         System.out.println("Return Date: " + currentTransaction.getReturnDate());
@@ -142,7 +144,7 @@ public class LibraryService {
         }
     }
 
-    public void extendDueDate(Book book, Member member, Scanner sc) {
+    public void renewBook(Book book, Member member, Scanner sc) {
         Objects.requireNonNull(book, "Book cannot be null.");
         Objects.requireNonNull(member, "Member cannot be null.");
 
@@ -154,17 +156,19 @@ public class LibraryService {
             throw new IllegalStateException("The book " + book.getBookID() + " is currently not borrowed");
         } else if (!currentTransaction.getMemberID().equals(member.getMemberID())) {
             // now from books current transaction we can get the id of the member currently borrowing it
-            throw new IllegalStateException("The book " + book.getBookID() + " is currently not borrowed by you");
+            throw new IllegalStateException("The book " + book.getBookID() + " is currently borrowed by someone else");
         } else {
             // if the book is actually borrowed and by the correct member
             // now we can continue with our renewal process
 
 
-            // before asking for renewal time, lets first check for any late submissions
+            // before asking for renewal time, we'll check for any late submissions
             LocalDate currentDate = LocalDate.now();
 
             if (currentDate.isAfter(currentTransaction.getDueDate())) {
+                // this sets fine
                 currentTransaction.calculateFine();
+                member.setPendingDues(member.getPendingDues() + currentTransaction.getFine());
             }
 
             // here we ask for what kind of period the user wants to renew
@@ -194,9 +198,13 @@ public class LibraryService {
             if (totalDays <= 0 || totalDays > 14) {
                 throw new IllegalArgumentException("Renewal duration is between 1 - 14 days.");
             }
+
+            // this passes renewal info to Transaction to handle everything
+            currentTransaction.extendDueDate(totalDays);
+            System.out.println("Book '" + book.getTitle() + "' successfully renewed!");
+            System.out.println("New Due Date: " + currentTransaction.getDueDate());
+            System.out.println("Renewal recorded on: " + currentTransaction.getRenewalDate()); // Good for transparency
         }
-
-
     }
 
 //    public void searchBook(Book book) {

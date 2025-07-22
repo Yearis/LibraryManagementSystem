@@ -1,11 +1,8 @@
 package library.models;
 
-import library.services.LibraryService;
-
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
-import java.util.Scanner;
 
 public class Transaction {
     // global counter
@@ -19,6 +16,7 @@ public class Transaction {
     private final LocalDate dueDate;
     private long fine;
     private int renewalCount;
+    private LocalDate renewalDate;
     private LocalDate extendedDueDate;
 
     // getters
@@ -26,9 +24,13 @@ public class Transaction {
     public String getMemberID() { return memberID; }
     public String getBorrowedBookID() { return borrowedBookID; }
     public LocalDate getIssueDate() { return issueDate; }
-    public LocalDate getDueDate() { return (extendedDueDate != null) ? extendedDueDate : dueDate; }
     public LocalDate getReturnDate() { return this.returnDate; }
     public long getFine() { return this.fine; }
+    public LocalDate getRenewalDate() {return renewalDate; }
+    public LocalDate getDueDate() {
+        // this always returns the active dueDate throughout the transaction
+        return (extendedDueDate != null) ? extendedDueDate : dueDate;
+    }
 
 
     public Transaction(String memberID, String  borrowedBookID, LocalDate issueDate, LocalDate dueDate) {
@@ -37,7 +39,8 @@ public class Transaction {
         this.issueDate = issueDate;
         this.dueDate = dueDate;
         this.extendedDueDate = null; // currently its null
-        this.renewalCount = 0; // currently its 0 max it can go is 1 for every transaction
+        this.renewalCount = 0; // currently its 0 and we will increment it for every renewal
+        this.returnDate = null;
 
         this.transactionID = "TR_" + String.format("%06d", ++transactionCounter);
     }
@@ -53,16 +56,41 @@ public class Transaction {
             throw new IllegalStateException("Return date must be set before calculating fine.");
         }
 
-        if (returnDate.isAfter(dueDate)) {
-            long daysLate = ChronoUnit.DAYS.between(dueDate, returnDate);
+        if (returnDate.isAfter(this.getDueDate())) {
+            long daysLate = ChronoUnit.DAYS.between(this.getDueDate(), this.getReturnDate());
             this.fine = Math.max(0, daysLate) * 5; // every late day result in 5rs fine
         } else {
             this.fine = 0; // No fine if returned before or on due date
         }
     }
 
-    public void extendDueDate(Scanner sc) {
+    public void extendDueDate(int totalDays) {
 
+        if (this.returnDate != null) {
+            // meaning book has already been returned
+            throw new IllegalStateException("Cannot extend due date for already returned book");
+        }
+        // First we check if user is eligible to renewBook or not
+        if (renewalCount > 0) {
+            throw new IllegalStateException("The Book can only be renewed once per Transaction");
+        }
+
+        // check
+        if (totalDays <= 0 || totalDays > 14) {
+            throw new IllegalArgumentException("Renewal date should be between 1 - 14 days");
+        }
+
+        // First, we have to set the renewal date as today
+        this.renewalDate = LocalDate.now();
+        this.extendedDueDate = getDueDate().plusDays(totalDays);
+        this.renewalCount++; // increase the counter
+
+        // resets the fine for user
+        this.fine = 0;
+    }
+
+    public void resetFine() {
+        this.fine = 0;
     }
 
 }
