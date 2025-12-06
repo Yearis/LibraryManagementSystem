@@ -36,7 +36,7 @@ public class LibraryService {
             default -> throw new IllegalArgumentException("Invalid Choice!");
         };
 
-        System.out.println("Enter the duration you want to borrow for (eg. '2' for 2 DAYS/WEEKS/MONTHS) : ");
+        System.out.print("Enter the number of DAYS/WEEKS/MONTHS you wish to borrow for. The maximum total duration is 90 days: ");
         int duration = sc.nextInt();
 
         // here we convert the total number of days from user selection of unit
